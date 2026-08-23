@@ -1,16 +1,8 @@
 // Список ваших треков (замените на свои файлы)
 const tracks = [
     {
-        name: "Трек 1",
-        file: "song1.mp3"
-    },
-    {
-        name: "Трек 2", 
-        file: "song2.mp3"
-    },
-    {
-        name: "Трек 3",
-        file: "song3.mp3"
+        name: "BASSLINE BUSINESS",
+        file: "01 BASSLINE BUSINESS.mp3"
     }
 ];
 
