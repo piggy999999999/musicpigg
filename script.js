@@ -23,21 +23,12 @@ function showPage(pageName) {
     document.getElementById(`nav-${pageName}`).classList.add('active');
     
     if (pageName === 'home') loadQueue();
-    if (pageName === 'search') document.getElementById('searchInput').value = '';
-    if (pageName === 'albums') loadAlbums();
-}
-
-// Загрузка очереди (все треки)
-async function loadQueue() {
-    const { data: tracks } = await supabase
-        .from('tracks')
-        .select('*, artists(name), albums(title, cover)')
-        .order('created_at');
-    
-    if (tracks) {
-        currentQueue = tracks;
-        renderQueue();
+    if (pageName === 'search') {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('searchResultsContainer').innerHTML = '<p style="color: #b3b3b3; text-align: center; margin-top: 40px;">Введите запрос для поиска</p>';
+        document.getElementById('searchInput').focus();
     }
+    if (pageName === 'albums') loadAlbums();
 }
 
 // Отображение очереди
@@ -125,40 +116,67 @@ function updateActiveTrack() {
 // Поиск
 async function searchTracks() {
     const query = document.getElementById('searchInput').value.trim();
+    const resultsContainer = document.getElementById('searchResults');
+    const container = document.getElementById('searchResultsContainer');
+    
     if (!query) {
-        document.getElementById('searchResults').innerHTML = '';
+        resultsContainer.innerHTML = '';
+        container.innerHTML = '<p style="color: #b3b3b3; text-align: center; margin-top: 40px;">Введите запрос для поиска</p>';
         return;
     }
     
-    const { data: tracks } = await supabase
+    // Показываем индикатор загрузки
+    container.innerHTML = '<p style="color: #b3b3b3; text-align: center; margin-top: 40px;">Поиск...</p>';
+    
+    const { data: tracks, error } = await supabase
         .from('tracks')
         .select('*, artists(name)')
-        .ilike('title', `%${query}%`);
+        .ilike('title', `%${query}%`)
+        .limit(20);
     
+    // Также ищем по имени исполнителя
+    const { data: tracksByArtist } = await supabase
+        .from('tracks')
+        .select('*, artists(name)')
+        .ilike('artists.name', `%${query}%`)
+        .limit(20);
+    
+    container.innerHTML = '<ul id="searchResults" class="track-list"></ul>';
     const results = document.getElementById('searchResults');
-    results.innerHTML = '';
     
-    if (tracks) {
-        tracks.forEach(track => {
-            const li = document.createElement('li');
-            li.className = 'track-item';
-            li.onclick = () => {
-                currentQueue = [track];
-                playTrack(0);
-            };
-            
-            li.innerHTML = `
-                <div class="track-info">
-                    <div class="track-title">${track.title}</div>
-                    <div class="track-artist" onclick="event.stopPropagation(); showArtist('${track.artist_id}')">
-                        ${track.artists?.name || 'Неизвестный'}
-                    </div>
-                </div>
-            `;
-            
-            results.appendChild(li);
-        });
+    if ((!tracks || tracks.length === 0) && (!tracksByArtist || tracksByArtist.length === 0)) {
+        results.innerHTML = '<p style="color: #b3b3b3; text-align: center;">Ничего не найдено</p>';
+        return;
     }
+    
+    // Объединяем результаты
+    const allResults = [...(tracks || []), ...(tracksByArtist || [])];
+    const uniqueResults = Array.from(new Map(allResults.map(track => [track.id, track])).values());
+    
+    uniqueResults.forEach(track => {
+        const li = document.createElement('li');
+        li.className = 'track-item';
+        li.onclick = () => {
+            currentQueue = [track];
+            playTrack(0);
+            showPage('home');
+        };
+        
+        const artistName = track.artists?.name || 'Неизвестный';
+        const title = track.title;
+        
+        li.innerHTML = `
+            <div class="track-info">
+                <div class="track-title">${title}</div>
+                <div class="track-artist" onclick="event.stopPropagation(); showArtist('${track.artist_id}')">
+                    ${artistName}
+                </div>
+            </div>
+            <span style="color: #1DB954; font-size: 20px;">▶️</span>
+        `;
+        
+        results.appendChild(li);
+    });
 }
 
 // Альбомы
