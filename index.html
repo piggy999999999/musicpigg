@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ФОНОТЕКА — моя музыкальная библиотека</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #14171a;
+    --panel: #1c2024;
+    --panel-2: #22262b;
+    --line: #2c3136;
+    --text: #ece7dd;
+    --muted: #8b9198;
+    --accent: #d9a441;
+    --accent-dim: #8a6a2f;
+    --teal: #4a7a72;
+    --danger: #b5544a;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    padding-bottom:110px;
+  }
+  .wrap{
+    max-width:820px;
+    margin:0 auto;
+    padding:48px 24px 24px;
+  }
+  header{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    border-bottom:1px solid var(--line);
+    padding-bottom:20px;
+    margin-bottom:28px;
+  }
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:34px;
+    letter-spacing:0.5px;
+    margin:0;
+    color:var(--text);
+  }
+  h1 span{ color:var(--accent); }
+  .count{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--muted);
+    letter-spacing:1px;
+  }
+
+  /* Add track panel */
+  .add-panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:20px;
+    margin-bottom:24px;
+  }
+  .add-panel summary{
+    cursor:pointer;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:var(--accent);
+    outline:none;
+  }
+  .add-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    margin-top:16px;
+  }
+  .add-grid .full{ grid-column:1 / -1; }
+  label{
+    display:block;
+    font-size:11px;
+    font-family:'IBM Plex Mono',monospace;
+    color:var(--muted);
+    margin-bottom:5px;
+    letter-spacing:0.5px;
+  }
+  input[type=text], input[type=url]{
+    width:100%;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:10px 12px;
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+  }
+  input:focus{ outline:1px solid var(--accent); border-color:var(--accent); }
+  .add-btn{
+    margin-top:14px;
+    background:var(--accent);
+    color:#1a1a1a;
+    border:none;
+    padding:10px 18px;
+    border-radius:6px;
+    font-weight:600;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .add-btn:hover{ background:#e6b559; }
+  .hint{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:10px;
+    line-height:1.5;
+  }
+
+  /* Search & filters */
+  .tools{
+    display:flex;
+    gap:10px;
+    margin-bottom:18px;
+    flex-wrap:wrap;
+  }
+  .search-box{
+    flex:1;
+    min-width:180px;
+    position:relative;
+  }
+  .search-box input{
+    padding-left:34px;
+  }
+  .search-box::before{
+    content:"⌕";
+    position:absolute;
+    left:11px;
+    top:50%;
+    transform:translateY(-50%);
+    color:var(--muted);
+    font-size:15px;
+  }
+  select{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:10px 10px;
+    border-radius:6px;
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+  }
+
+  /* Track list */
+  .catalog{
+    list-style:none;
+    margin:0;
+    padding:0;
+  }
+  .catalog li{
+    display:grid;
+    grid-template-columns:34px 1fr auto;
+    align-items:center;
+    gap:14px;
+    padding:12px 10px;
+    border-bottom:1px solid var(--line);
+    cursor:pointer;
+    border-radius:6px;
+  }
+  .catalog li:hover{ background:var(--panel); }
+  .catalog li.playing{ background:var(--panel-2); }
+  .catalog li.playing .idx{ color:var(--accent); }
+  .catalog li.playing .t-title{ color:var(--accent); }
+  .idx{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--muted);
+    text-align:right;
+  }
+  .t-title{
+    font-weight:600;
+    font-size:14px;
+    color:var(--text);
+  }
+  .t-sub{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:2px;
+  }
+  .del-btn{
+    background:none;
+    border:none;
+    color:var(--muted);
+    font-size:16px;
+    cursor:pointer;
+    padding:4px 8px;
+    line-height:1;
+  }
+  .del-btn:hover{ color:var(--danger); }
+  .empty{
+    text-align:center;
+    color:var(--muted);
+    padding:50px 20px;
+    font-size:14px;
+    line-height:1.7;
+  }
+  .empty b{ color:var(--text); }
+
+  /* Player bar */
+  .player{
+    position:fixed;
+    left:0; right:0; bottom:0;
+    background:var(--panel);
+    border-top:1px solid var(--line);
+    padding:12px 20px 16px;
+  }
+  .player-inner{
+    max-width:820px;
+    margin:0 auto;
+  }
+  .now{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:8px;
+  }
+  .now-title{
+    font-family:'Fraunces',serif;
+    font-size:16px;
+    color:var(--text);
+  }
+  .now-sub{
+    font-size:12px;
+    color:var(--muted);
+  }
+  .prog-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:10px;
+  }
+  .time{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+    min-width:34px;
+  }
+  input[type=range]{
+    -webkit-appearance:none;
+    flex:1;
+    height:3px;
+    background:var(--line);
+    border-radius:2px;
+    outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:12px; height:12px;
+    border-radius:50%;
+    background:var(--accent);
+    cursor:pointer;
+    margin-top:-4.5px;
+  }
+  input[type=range]::-webkit-slider-runnable-track{
+    height:3px;
+    background:var(--line);
+    border-radius:2px;
+  }
+  .ctrl-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .transport{
+    display:flex;
+    gap:8px;
+    align-items:center;
+  }
+  .transport button{
+    background:none;
+    border:1px solid var(--line);
+    color:var(--text);
+    width:38px; height:38px;
+    border-radius:50%;
+    cursor:pointer;
+    font-size:15px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .transport button.play{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:#1a1a1a;
+    width:44px;height:44px;
+    font-size:17px;
+  }
+  .transport button:hover{ border-color:var(--accent); }
+  .vol-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    width:110px;
+  }
+  .vol-row span{ color:var(--muted); font-size:13px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>ФОНО<span>ТЕКА</span></h1>
+    <div class="count" id="count">0 треков</div>
+  </header>
+
+  <details class="add-panel">
+    <summary>+ добавить трек</summary>
+    <div class="add-grid">
+      <div class="full">
+        <label>Ссылка на mp3 (прямая ссылка на файл)</label>
+        <input type="url" id="f-url" placeholder="https://.../track.mp3">
+      </div>
+      <div>
+        <label>Название трека</label>
+        <input type="text" id="f-title" placeholder="Bassline Business">
+      </div>
+      <div>
+        <label>Исполнитель</label>
+        <input type="text" id="f-artist" placeholder="Имя артиста">
+      </div>
+      <div class="full">
+        <label>Альбом</label>
+        <input type="text" id="f-album" placeholder="Название альбома">
+      </div>
+    </div>
+    <button class="add-btn" onclick="addTrack()">Добавить в фонотеку</button>
+    <p class="hint">Файл должен где-то лежать по прямой ссылке — например, на GitHub Pages (не raw.githubusercontent.com — он не всегда отдаёт звук корректно). Просто вставьте ссылку и заполните поля — трек сохранится у вас в браузере.</p>
+  </details>
+
+  <div class="tools">
+    <div class="search-box">
+      <input type="text" id="search" placeholder="Поиск по треку, артисту или альбому..." oninput="renderList()">
+    </div>
+    <select id="filter-artist" onchange="renderList()">
+      <option value="">Все исполнители</option>
+    </select>
+    <select id="filter-album" onchange="renderList()">
+      <option value="">Все альбомы</option>
+    </select>
+  </div>
+
+  <ul class="catalog" id="catalog"></ul>
+</div>
+
+<div class="player">
+  <div class="player-inner">
+    <div class="now">
+      <div>
+        <div class="now-title" id="now-title">Ничего не играет</div>
+        <div class="now-sub" id="now-sub">—</div>
+      </div>
+    </div>
+    <div class="prog-row">
+      <span class="time" id="cur-time">0:00</span>
+      <input type="range" id="progress" value="0" max="100">
+      <span class="time" id="dur-time">0:00</span>
+    </div>
+    <div class="ctrl-row">
+      <div class="transport">
+        <button onclick="prevTrack()" title="Назад">⏮</button>
+        <button class="play" id="play-btn" onclick="playPause()" title="Пуск/пауза">▶</button>
+        <button onclick="nextTrack()" title="Вперёд">⏭</button>
+      </div>
+      <div class="vol-row">
+        <span>🔊</span>
+        <input type="range" id="volume" min="0" max="1" step="0.01" value="1">
+      </div>
+    </div>
+  </div>
+</div>
+
+<audio id="audio"></audio>
+
+<script>
+let library = [];
+let currentIndex = -1;
+let filteredIndices = [];
+
+const audio = document.getElementById('audio');
+const STORAGE_KEY = 'fonoteka-library';
+
+async function loadLibrary(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, false);
+    library = res ? JSON.parse(res.value) : [];
+  }catch(e){
+    library = [];
+  }
+  renderFilters();
+  renderList();
+}
+
+async function saveLibrary(){
+  try{
+    await window.storage.set(STORAGE_KEY, JSON.stringify(library), false);
+  }catch(e){
+    console.error('Не удалось сохранить библиотеку', e);
+  }
+}
+
+function addTrack(){
+  const url = document.getElementById('f-url').value.trim();
+  const title = document.getElementById('f-title').value.trim();
+  const artist = document.getElementById('f-artist').value.trim();
+  const album = document.getElementById('f-album').value.trim();
+
+  if(!url || !title){
+    alert('Заполните хотя бы ссылку и название трека');
+    return;
+  }
+
+  library.push({ url, title, artist: artist || 'Неизвестен', album: album || '—' });
+  saveLibrary();
+
+  document.getElementById('f-url').value = '';
+  document.getElementById('f-title').value = '';
+  document.getElementById('f-artist').value = '';
+  document.getElementById('f-album').value = '';
+
+  renderFilters();
+  renderList();
+}
+
+function deleteTrack(i){
+  event.stopPropagation();
+  if(!confirm('Удалить трек из фонотеки?')) return;
+  const wasPlaying = filteredIndices[i] === currentIndex;
+  library.splice(filteredIndices[i], 1);
+  if(wasPlaying){
+    audio.pause();
+    currentIndex = -1;
+    document.getElementById('now-title').textContent = 'Ничего не играет';
+    document.getElementById('now-sub').textContent = '—';
+    setPlayIcon(false);
+  }
+  saveLibrary();
+  renderFilters();
+  renderList();
+}
+
+function renderFilters(){
+  const artistSel = document.getElementById('filter-artist');
+  const albumSel = document.getElementById('filter-album');
+  const curArtist = artistSel.value;
+  const curAlbum = albumSel.value;
+
+  const artists = [...new Set(library.map(t => t.artist))].sort();
+  const albums = [...new Set(library.map(t => t.album))].sort();
+
+  artistSel.innerHTML = '<option value="">Все исполнители</option>' +
+    artists.map(a => `<option value="${escapeAttr(a)}">${escapeHtml(a)}</option>`).join('');
+  albumSel.innerHTML = '<option value="">Все альбомы</option>' +
+    albums.map(a => `<option value="${escapeAttr(a)}">${escapeHtml(a)}</option>`).join('');
+
+  artistSel.value = curArtist;
+  albumSel.value = curAlbum;
+}
+
+function renderList(){
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  const fArtist = document.getElementById('filter-artist').value;
+  const fAlbum = document.getElementById('filter-album').value;
+
+  filteredIndices = [];
+  library.forEach((t, i) => {
+    const matchesQ = !q || t.title.toLowerCase().includes(q) ||
+      t.artist.toLowerCase().includes(q) || t.album.toLowerCase().includes(q);
+    const matchesArtist = !fArtist || t.artist === fArtist;
+    const matchesAlbum = !fAlbum || t.album === fAlbum;
+    if(matchesQ && matchesArtist && matchesAlbum) filteredIndices.push(i);
+  });
+
+  const ul = document.getElementById('catalog');
+  document.getElementById('count').textContent = library.length + (library.length === 1 ? ' трек' : ' треков');
+
+  if(filteredIndices.length === 0){
+    ul.innerHTML = `<div class="empty">${library.length === 0
+      ? 'Фонотека пуста. Откройте <b>«+ добавить трек»</b> выше и добавьте первый трек по ссылке.'
+      : 'Ничего не найдено по этому запросу.'}</div>`;
+    return;
+  }
+
+  ul.innerHTML = filteredIndices.map((libIdx, pos) => {
+    const t = library[libIdx];
+    const isPlaying = libIdx === currentIndex;
+    return `<li class="${isPlaying ? 'playing' : ''}" onclick="playByFilteredPos(${pos})">
+      <span class="idx">${String(pos+1).padStart(2,'0')}</span>
+      <span>
+        <div class="t-title">${escapeHtml(t.title)}</div>
+        <div class="t-sub">${escapeHtml(t.artist)} · ${escapeHtml(t.album)}</div>
+      </span>
+      <button class="del-btn" onclick="deleteTrack(${pos})" title="Удалить">✕</button>
+    </li>`;
+  }).join('');
+}
+
+function playByFilteredPos(pos){
+  const libIdx = filteredIndices[pos];
+  playTrack(libIdx);
+}
+
+function playTrack(libIdx){
+  currentIndex = libIdx;
+  const t = library[libIdx];
+  audio.src = t.url;
+  audio.play().catch(()=>{});
+  document.getElementById('now-title').textContent = t.title;
+  document.getElementById('now-sub').textContent = t.artist + ' · ' + t.album;
+  setPlayIcon(true);
+  renderList();
+}
+
+function playPause(){
+  if(currentIndex === -1){
+    if(library.length > 0) playTrack(0);
+    return;
+  }
+  if(audio.paused){
+    audio.play();
+    setPlayIcon(true);
+  }else{
+    audio.pause();
+    setPlayIcon(false);
+  }
+}
+
+function setPlayIcon(playing){
+  document.getElementById('play-btn').textContent = playing ? '❚❚' : '▶';
+}
+
+function nextTrack(){
+  if(filteredIndices.length === 0) return;
+  const pos = filteredIndices.indexOf(currentIndex);
+  const nextPos = pos === -1 ? 0 : (pos + 1) % filteredIndices.length;
+  playTrack(filteredIndices[nextPos]);
+}
+
+function prevTrack(){
+  if(filteredIndices.length === 0) return;
+  const pos = filteredIndices.indexOf(currentIndex);
+  const prevPos = pos === -1 ? 0 : (pos - 1 + filteredIndices.length) % filteredIndices.length;
+  playTrack(filteredIndices[prevPos]);
+}
+
+audio.addEventListener('ended', nextTrack);
+
+audio.ontimeupdate = () => {
+  if(audio.duration){
+    document.getElementById('progress').value = (audio.currentTime / audio.duration) * 100;
+    document.getElementById('cur-time').textContent = formatTime(audio.currentTime);
+    document.getElementById('dur-time').textContent = formatTime(audio.duration);
+  }
+};
+document.getElementById('progress').onchange = () => {
+  if(audio.duration){
+    audio.currentTime = (document.getElementById('progress').value / 100) * audio.duration;
+  }
+};
+document.getElementById('volume').oninput = (e) => {
+  audio.volume = e.target.value;
+};
+
+function formatTime(sec){
+  if(!isFinite(sec)) return '0:00';
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60).toString().padStart(2,'0');
+  return `${m}:${s}`;
+}
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+function escapeAttr(str){
+  return String(str).replace(/"/g,'&quot;');
+}
+
+loadLibrary();
+</script>
+
+</body>
+</html>
