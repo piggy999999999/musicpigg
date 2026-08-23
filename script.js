@@ -44,6 +44,19 @@ async function loadQueue() {
     }
 }
 
+// Загрузка очереди (все треки)
+async function loadQueue() {
+    const { data: tracks } = await supabase
+        .from('tracks')
+        .select('*, artists(name), albums(title, cover)')
+        .order('created_at');
+    
+    if (tracks) {
+        currentQueue = tracks;
+        renderQueue();
+    }
+}
+
 // Отображение очереди
 function renderQueue() {
     const queueList = document.getElementById('queueList');
