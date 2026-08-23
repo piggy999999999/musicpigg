@@ -31,6 +31,19 @@ function showPage(pageName) {
     if (pageName === 'albums') loadAlbums();
 }
 
+// Загрузка очереди (все треки)
+async function loadQueue() {
+    const { data: tracks } = await supabase
+        .from('tracks')
+        .select('*, artists(name), albums(title, cover)')
+        .order('created_at');
+    
+    if (tracks) {
+        currentQueue = tracks;
+        renderQueue();
+    }
+}
+
 // Отображение очереди
 function renderQueue() {
     const queueList = document.getElementById('queueList');
@@ -116,25 +129,21 @@ function updateActiveTrack() {
 // Поиск
 async function searchTracks() {
     const query = document.getElementById('searchInput').value.trim();
-    const resultsContainer = document.getElementById('searchResults');
     const container = document.getElementById('searchResultsContainer');
     
     if (!query) {
-        resultsContainer.innerHTML = '';
         container.innerHTML = '<p style="color: #b3b3b3; text-align: center; margin-top: 40px;">Введите запрос для поиска</p>';
         return;
     }
     
-    // Показываем индикатор загрузки
     container.innerHTML = '<p style="color: #b3b3b3; text-align: center; margin-top: 40px;">Поиск...</p>';
     
-    const { data: tracks, error } = await supabase
+    const { data: tracks } = await supabase
         .from('tracks')
         .select('*, artists(name)')
         .ilike('title', `%${query}%`)
         .limit(20);
     
-    // Также ищем по имени исполнителя
     const { data: tracksByArtist } = await supabase
         .from('tracks')
         .select('*, artists(name)')
@@ -149,7 +158,6 @@ async function searchTracks() {
         return;
     }
     
-    // Объединяем результаты
     const allResults = [...(tracks || []), ...(tracksByArtist || [])];
     const uniqueResults = Array.from(new Map(allResults.map(track => [track.id, track])).values());
     
@@ -162,14 +170,11 @@ async function searchTracks() {
             showPage('home');
         };
         
-        const artistName = track.artists?.name || 'Неизвестный';
-        const title = track.title;
-        
         li.innerHTML = `
             <div class="track-info">
-                <div class="track-title">${title}</div>
+                <div class="track-title">${track.title}</div>
                 <div class="track-artist" onclick="event.stopPropagation(); showArtist('${track.artist_id}')">
-                    ${artistName}
+                    ${track.artists?.name || 'Неизвестный'}
                 </div>
             </div>
             <span style="color: #1DB954; font-size: 20px;">▶️</span>
@@ -222,7 +227,7 @@ async function showArtist(artistId) {
         
         const { data: tracks } = await supabase
             .from('tracks')
-            .select('*')
+            .select('*, artists(name)')
             .eq('artist_id', artistId);
         
         if (tracks) {
@@ -276,7 +281,7 @@ async function showAlbum(albumId) {
         
         const { data: tracks } = await supabase
             .from('tracks')
-            .select('*')
+            .select('*, artists(name)')
             .eq('album_id', albumId)
             .order('track_number');
         
@@ -295,7 +300,7 @@ async function showAlbum(albumId) {
 async function playAlbum(albumId) {
     const { data: tracks } = await supabase
         .from('tracks')
-        .select('*')
+        .select('*, artists(name)')
         .eq('album_id', albumId)
         .order('track_number');
     
@@ -310,7 +315,7 @@ async function playAllArtistTracks() {
     if (currentArtistId) {
         const { data: tracks } = await supabase
             .from('tracks')
-            .select('*')
+            .select('*, artists(name)')
             .eq('artist_id', currentArtistId);
         
         if (tracks && tracks.length > 0) {
@@ -325,7 +330,7 @@ async function playAllAlbumTracks() {
     if (currentAlbumId) {
         const { data: tracks } = await supabase
             .from('tracks')
-            .select('*')
+            .select('*, artists(name)')
             .eq('album_id', currentAlbumId)
             .order('track_number');
         
