@@ -71,3 +71,7 @@ function updatePlaylistUI() {
 // Инициализация
 loadPlaylist();
 playTrack(0);
+// Регулятор громкости
+volume.oninput = () => {
+    audio.volume = volume.value;
+};
