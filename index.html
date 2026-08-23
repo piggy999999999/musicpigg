@@ -56,9 +56,11 @@
     <div id="page-search" class="page">
         <h2>Поиск треков</h2>
         <div class="search-bar">
-            <input type="text" id="searchInput" placeholder="Поиск по названию или исполнителю..." oninput="searchTracks()">
+            <input type="text" id="searchInput" placeholder="🔍 Поиск по названию или исполнителю..." oninput="searchTracks()">
         </div>
-        <ul id="searchResults" class="track-list"></ul>
+        <div id="searchResultsContainer">
+            <ul id="searchResults" class="track-list"></ul>
+        </div>
     </div>
 
     <!-- Альбомы -->
