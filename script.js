@@ -11,6 +11,7 @@ const audio = document.getElementById('audio');
 const playlist = document.getElementById('playlist');
 const trackName = document.getElementById('trackName');
 const progress = document.getElementById('progress');
+const volume = document.getElementById('volume');
 
 // Загрузка плейлиста
 function loadPlaylist() {
