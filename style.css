@@ -206,21 +206,59 @@ body {
 /* Поиск */
 .search-bar {
     margin: 20px 0;
+    position: relative;
 }
 
 .search-bar input {
     width: 100%;
-    padding: 15px;
+    padding: 15px 20px;
     font-size: 16px;
     background: #1a1a1a;
-    border: 1px solid #333;
-    border-radius: 25px;
+    border: 2px solid #333;
+    border-radius: 30px;
     color: #ffffff;
+    transition: all 0.3s;
 }
 
 .search-bar input:focus {
     outline: none;
     border-color: #1DB954;
+    background: #222;
+    box-shadow: 0 0 15px rgba(29, 185, 84, 0.3);
+}
+
+.search-bar input::placeholder {
+    color: #b3b3b3;
+}
+
+#searchResultsContainer {
+    margin-top: 20px;
+}
+
+#searchResults {
+    list-style: none;
+}
+
+#searchResults .track-item {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Подсветка найденного */
+.search-highlight {
+    background: rgba(29, 185, 84, 0.3);
+    padding: 2px 4px;
+    border-radius: 3px;
 }
 
 /* Альбомы */
