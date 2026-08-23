@@ -1,6 +1,6 @@
 // Инициализация Supabase
-const SUPABASE_URL = 'ТВОЙ_URL_СЮДА';
-const SUPABASE_KEY = 'ТВОЙ_КЛЮЧ_СЮДА';
+const SUPABASE_URL = 'https://jsiloywkoyurrkbpehos.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_y1jqiS8uXKxf0XhLkaQ7Jw_qUa8Ol9V';
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Состояние плеера
