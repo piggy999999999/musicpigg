@@ -1,360 +1,330 @@
-const SUPABASE_URL = 'https://jsiloywkoyurrkbpehos.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_y1jqiS8uXKxf0XhLkaQ7Jw_qUa8Ol9V';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-let currentQueue = [];
-let currentIndex = 0;
-let isShuffle = false;
-let currentArtistId = null;
-let currentAlbumId = null;
-
-const audio = document.getElementById('audio');
-const progress = document.getElementById('progress');
-const volume = document.getElementById('volume');
-const playPauseBtn = document.getElementById('playPauseBtn');
-
-function showPage(pageName) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
-    document.getElementById(`page-${pageName}`).classList.add('active');
-    document.getElementById(`nav-${pageName}`).classList.add('active');
-    
-    if (pageName === 'home') loadQueue();
-    if (pageName === 'search') {
-        document.getElementById('searchInput').value = '';
-        document.getElementById('searchResultsContainer').innerHTML = '<p style="color: #b3b3b3; text-align: center; margin-top: 40px;">Введите запрос для поиска</p>';
-        document.getElementById('searchInput').focus();
-    }
-    if (pageName === 'albums') loadAlbums();
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-async function loadQueue() {
-    const { data: tracks } = await supabase
-        .from('tracks')
-        .select('*, artists(name), albums(title, cover)')
-        .order('created_at');
-    
-    if (tracks) {
-        currentQueue = tracks;
-        renderQueue();
-    }
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #121212;
+    color: #ffffff;
+    min-height: 100vh;
 }
 
-function renderQueue() {
-    const queueList = document.getElementById('queueList');
-    queueList.innerHTML = '';
-    
-    currentQueue.forEach((track, index) => {
-        const li = createTrackItem(track, index);
-        queueList.appendChild(li);
-    });
+.navbar {
+    background: #1a1a1a;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 
-function createTrackItem(track, index) {
-    const li = document.createElement('li');
-    li.className = 'track-item';
-    li.onclick = () => playTrack(index);
-    
-    li.innerHTML = `
-        <span class="track-number">${index + 1}</span>
-        <div class="track-info">
-            <div class="track-title">${track.title}</div>
-            <div class="track-artist" onclick="event.stopPropagation(); showArtist('${track.artist_id}')">
-                ${track.artists?.name || 'Неизвестный'}
-            </div>
-        </div>
-    `;
-    
-    return li;
+.nav-brand {
+    font-size: 24px;
+    font-weight: bold;
+    color: #1DB954;
 }
 
-function playTrack(index) {
-    currentIndex = index;
-    const track = currentQueue[index];
-    audio.src = track.url;
-    audio.play();
-    playPauseBtn.textContent = '⏸️';
-    
-    document.getElementById('currentTrackTitle').textContent = track.title;
-    document.getElementById('currentTrackArtist').textContent = track.artists?.name || '';
-    
-    if (track.albums?.cover) {
-        document.getElementById('currentCover').src = track.albums.cover;
-    }
-    
-    updateActiveTrack();
+.nav-links {
+    display: flex;
+    gap: 20px;
 }
 
-function playPause() {
-    if (audio.paused) {
-        audio.play();
-        playPauseBtn.textContent = '⏸️';
-    } else {
-        audio.pause();
-        playPauseBtn.textContent = '▶️';
-    }
+.nav-link {
+    color: #b3b3b3;
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    transition: all 0.3s;
+    cursor: pointer;
 }
 
-function nextTrack() {
-    if (currentQueue.length === 0) return;
-    currentIndex = (currentIndex + 1) % currentQueue.length;
-    playTrack(currentIndex);
+.nav-link:hover {
+    color: #ffffff;
 }
 
-function prevTrack() {
-    if (currentQueue.length === 0) return;
-    currentIndex = (currentIndex - 1 + currentQueue.length) % currentQueue.length;
-    playTrack(currentIndex);
+.nav-link.active {
+    background: #1DB954;
+    color: #ffffff;
 }
 
-function toggleShuffle() {
-    isShuffle = !isShuffle;
-    document.getElementById('shuffleBtn').style.color = isShuffle ? '#1DB954' : '#ffffff';
+.page {
+    display: none;
+    padding: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
-function updateActiveTrack() {
-    document.querySelectorAll('.track-item').forEach((item, index) => {
-        item.classList.toggle('active', index === currentIndex);
-    });
+.page.active {
+    display: block;
 }
 
-async function searchTracks() {
-    const query = document.getElementById('searchInput').value.trim();
-    const container = document.getElementById('searchResultsContainer');
-    
-    if (!query) {
-        container.innerHTML = '<p style="color: #b3b3b3; text-align: center; margin-top: 40px;">Введите запрос для поиска</p>';
-        return;
-    }
-    
-    container.innerHTML = '<p style="color: #b3b3b3; text-align: center; margin-top: 40px;">Поиск...</p>';
-    
-    const { data: tracks } = await supabase
-        .from('tracks')
-        .select('*, artists(name)')
-        .ilike('title', `%${query}%`)
-        .limit(20);
-    
-    const { data: tracksByArtist } = await supabase
-        .from('tracks')
-        .select('*, artists(name)')
-        .ilike('artists.name', `%${query}%`)
-        .limit(20);
-    
-    container.innerHTML = '<ul id="searchResults" class="track-list"></ul>';
-    const results = document.getElementById('searchResults');
-    
-    if ((!tracks || tracks.length === 0) && (!tracksByArtist || tracksByArtist.length === 0)) {
-        results.innerHTML = '<p style="color: #b3b3b3; text-align: center;">Ничего не найдено</p>';
-        return;
-    }
-    
-    const allResults = [...(tracks || []), ...(tracksByArtist || [])];
-    const uniqueResults = Array.from(new Map(allResults.map(track => [track.id, track])).values());
-    
-    uniqueResults.forEach(track => {
-        const li = document.createElement('li');
-        li.className = 'track-item';
-        li.onclick = () => {
-            currentQueue = [track];
-            playTrack(0);
-            showPage('home');
-        };
-        
-        li.innerHTML = `
-            <div class="track-info">
-                <div class="track-title">${track.title}</div>
-                <div class="track-artist" onclick="event.stopPropagation(); showArtist('${track.artist_id}')">
-                    ${track.artists?.name || 'Неизвестный'}
-                </div>
-            </div>
-            <span style="color: #1DB954; font-size: 20px;">▶️</span>
-        `;
-        
-        results.appendChild(li);
-    });
+.player-container {
+    background: #1a1a1a;
+    border-radius: 15px;
+    padding: 30px;
+    margin-bottom: 30px;
 }
 
-async function loadAlbums() {
-    const { data: albums } = await supabase
-        .from('albums')
-        .select('*, artists(name)');
-    
-    const grid = document.getElementById('albumsGrid');
-    grid.innerHTML = '';
-    
-    if (albums) {
-        albums.forEach(album => {
-            const card = document.createElement('div');
-            card.className = 'album-card';
-            
-            card.innerHTML = `
-                <img src="${album.cover || ''}" class="album-cover-img" onerror="this.style.background='#333'">
-                <div class="album-card-title" onclick="showAlbum('${album.id}')">${album.title}</div>
-                <div class="album-card-artist" onclick="showArtist('${album.artist_id}')">${album.artists?.name || ''}</div>
-                <button class="album-play-btn" onclick="event.stopPropagation(); playAlbum('${album.id}')">▶️</button>
-            `;
-            
-            grid.appendChild(card);
-        });
-    }
+.current-track-info {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 30px;
 }
 
-async function showArtist(artistId) {
-    currentArtistId = artistId;
-    showPage('artist');
-    
-    const { data: artist } = await supabase
-        .from('artists')
-        .select('*')
-        .eq('id', artistId)
-        .single();
-    
-    if (artist) {
-        document.getElementById('artistName').textContent = artist.name;
-        document.getElementById('artistPhoto').src = artist.photo || '';
-        
-        const { data: tracks } = await supabase
-            .from('tracks')
-            .select('*, artists(name)')
-            .eq('artist_id', artistId);
-        
-        if (tracks) {
-            currentQueue = tracks;
-            const trackList = document.getElementById('artistTracks');
-            trackList.innerHTML = '';
-            tracks.forEach((track, index) => {
-                trackList.appendChild(createTrackItem(track, index));
-            });
-        }
-        
-        const { data: albums } = await supabase
-            .from('albums')
-            .select('*')
-            .eq('artist_id', artistId);
-        
-        const albumGrid = document.getElementById('artistAlbums');
-        albumGrid.innerHTML = '';
-        if (albums) {
-            albums.forEach(album => {
-                const card = document.createElement('div');
-                card.className = 'album-card';
-                card.innerHTML = `
-                    <img src="${album.cover || ''}" class="album-cover-img">
-                    <div class="album-card-title" onclick="showAlbum('${album.id}')">${album.title}</div>
-                    <div class="album-card-artist">${album.year || ''}</div>
-                    <button class="album-play-btn" onclick="playAlbum('${album.id}')">▶️</button>
-                `;
-                albumGrid.appendChild(card);
-            });
-        }
-    }
+.current-cover {
+    width: 100px;
+    height: 100px;
+    border-radius: 10px;
+    background: #333;
 }
 
-async function showAlbum(albumId) {
-    currentAlbumId = albumId;
-    showPage('album');
-    
-    const { data: album } = await supabase
-        .from('albums')
-        .select('*, artists(name)')
-        .eq('id', albumId)
-        .single();
-    
-    if (album) {
-        document.getElementById('albumTitle').textContent = album.title;
-        document.getElementById('albumArtist').textContent = album.artists?.name || '';
-        document.getElementById('albumYear').textContent = album.year || '';
-        document.getElementById('albumCover').src = album.cover || '';
-        
-        const { data: tracks } = await supabase
-            .from('tracks')
-            .select('*, artists(name)')
-            .eq('album_id', albumId)
-            .order('track_number');
-        
-        if (tracks) {
-            currentQueue = tracks;
-            const trackList = document.getElementById('albumTracks');
-            trackList.innerHTML = '';
-            tracks.forEach((track, index) => {
-                trackList.appendChild(createTrackItem(track, index));
-            });
-        }
-    }
+.current-track-text h2 {
+    font-size: 24px;
+    margin-bottom: 5px;
 }
 
-async function playAlbum(albumId) {
-    const { data: tracks } = await supabase
-        .from('tracks')
-        .select('*, artists(name)')
-        .eq('album_id', albumId)
-        .order('track_number');
-    
-    if (tracks && tracks.length > 0) {
-        currentQueue = tracks;
-        playTrack(0);
-    }
+.current-track-text p {
+    color: #b3b3b3;
 }
 
-async function playAllArtistTracks() {
-    if (currentArtistId) {
-        const { data: tracks } = await supabase
-            .from('tracks')
-            .select('*, artists(name)')
-            .eq('artist_id', currentArtistId);
-        
-        if (tracks && tracks.length > 0) {
-            currentQueue = tracks;
-            playTrack(0);
-        }
-    }
+.controls {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 20px;
 }
 
-async function playAllAlbumTracks() {
-    if (currentAlbumId) {
-        const { data: tracks } = await supabase
-            .from('tracks')
-            .select('*, artists(name)')
-            .eq('album_id', currentAlbumId)
-            .order('track_number');
-        
-        if (tracks && tracks.length > 0) {
-            currentQueue = tracks;
-            playTrack(0);
-        }
-    }
+.ctrl-btn {
+    background: none;
+    border: none;
+    font-size: 30px;
+    cursor: pointer;
+    color: #ffffff;
+    transition: transform 0.2s;
 }
 
-audio.ontimeupdate = () => {
-    if (audio.duration) {
-        progress.value = (audio.currentTime / audio.duration) * 100;
-        document.getElementById('currentTime').textContent = formatTime(audio.currentTime);
-        document.getElementById('totalTime').textContent = formatTime(audio.duration);
-    }
-};
-
-progress.onchange = () => {
-    audio.currentTime = (progress.value / 100) * audio.duration;
-};
-
-volume.oninput = () => {
-    audio.volume = volume.value;
-};
-
-audio.onended = () => {
-    if (isShuffle && currentQueue.length > 1) {
-        currentIndex = Math.floor(Math.random() * currentQueue.length);
-    } else {
-        nextTrack();
-    }
-    playTrack(currentIndex);
-};
-
-function formatTime(seconds) {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+.ctrl-btn:hover {
+    transform: scale(1.2);
 }
 
-loadQueue();
+.play-btn {
+    background: #1DB954;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+}
+
+.progress-bar {
+    width: 100%;
+    margin: 20px 0;
+    accent-color: #1DB954;
+}
+
+.time-display {
+    display: flex;
+    justify-content: space-between;
+    color: #b3b3b3;
+    font-size: 14px;
+}
+
+.volume-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.volume-control input {
+    flex: 1;
+    accent-color: #1DB954;
+}
+
+.track-list {
+    list-style: none;
+}
+
+.track-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    margin: 5px 0;
+    background: #1a1a1a;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.track-item:hover {
+    background: #2a2a2a;
+}
+
+.track-item.active {
+    background: #1DB954;
+    color: #000;
+}
+
+.track-number {
+    margin-right: 15px;
+    color: #b3b3b3;
+    width: 30px;
+}
+
+.track-info {
+    flex: 1;
+}
+
+.track-title {
+    font-weight: bold;
+}
+
+.track-artist {
+    color: #b3b3b3;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.track-artist:hover {
+    color: #1DB954;
+    text-decoration: underline;
+}
+
+.search-bar {
+    margin: 20px 0;
+}
+
+.search-bar input {
+    width: 100%;
+    padding: 15px;
+    font-size: 16px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 25px;
+    color: #ffffff;
+}
+
+.search-bar input:focus {
+    outline: none;
+    border-color: #1DB954;
+}
+
+.albums-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.album-card {
+    background: #1a1a1a;
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.3s;
+    position: relative;
+}
+
+.album-card:hover {
+    transform: translateY(-5px);
+}
+
+.album-cover-img {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    background: #333;
+    margin-bottom: 10px;
+}
+
+.album-card-title {
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.album-card-artist {
+    color: #b3b3b3;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.album-play-btn {
+    position: absolute;
+    right: 20px;
+    bottom: 60px;
+    background: #1DB954;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.album-card:hover .album-play-btn {
+    opacity: 1;
+}
+
+.artist-header {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    margin-bottom: 40px;
+}
+
+.artist-photo {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: #333;
+}
+
+.artist-info h1 {
+    font-size: 40px;
+    margin-bottom: 15px;
+}
+
+.play-all-btn {
+    background: #1DB954;
+    color: #000;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 25px;
+    font-size: 16px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.album-header {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    margin-bottom: 40px;
+}
+
+.album-cover {
+    width: 200px;
+    height: 200px;
+    border-radius: 10px;
+    background: #333;
+}
+
+.album-info h1 {
+    font-size: 36px;
+}
+
+h2 {
+    margin-bottom: 20px;
+    color: #1DB954;
+}
+
+h3 {
+    margin: 20px 0;
+    color: #b3b3b3;
+}
